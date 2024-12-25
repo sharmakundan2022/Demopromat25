@@ -1,0 +1,56 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Barcode Scanner</title>
+  <script src="https://serratus.github.io/quaggaJS/examples/js/quagga.min.js"></script>
+  <style>
+    #interactive {
+      width: 100%;
+      height: auto;
+      position: relative;
+    }
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Barcode Scanner</h1>
+  <div id="interactive" class="viewport"></div>
+  <p id="result">Scan a barcode...</p>
+  <script>
+    Quagga.init({
+      inputStream: {
+        name: "Live",
+        type: "LiveStream",
+        target: document.querySelector('#interactive') // Camera preview
+      },
+      decoder: {
+        readers: ["code_128_reader", "ean_reader", "upc_reader"] // Add more barcode types if needed
+      }
+    }, function(err) {
+      if (err) {
+        console.error(err);
+        document.getElementById('result').textContent = "Error initializing camera.";
+        return;
+      }
+      console.log("Initialization finished. Ready to start");
+      Quagga.start();
+    });
+
+    Quagga.onDetected(function(data) {
+      const barcode = data.codeResult.code;
+      console.log("Detected barcode:", barcode);
+      document.getElementById('result').textContent = "Scanned Barcode: " + barcode;
+
+      // Send the barcode back to ProtoPie
+      if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(barcode);
+      }
+    });
+  </script>
+</body>
+</html>
