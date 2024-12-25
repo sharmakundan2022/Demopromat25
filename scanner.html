@@ -1,71 +1,79 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Barcode Scanner</title>
-  <script src="https://serratus.github.io/quaggaJS/examples/js/quagga.min.js"></script>
-  <style>
-    #interactive {
-      width: 100%;
-      height: auto;
-      position: relative;
-    }
-    canvas {
-      position: absolute;
-      top: 0;
-      left: 0;
-    }
-    button {
-      margin-top: 20px;
-      padding: 10px 20px;
-      font-size: 16px;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #0056b3;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barcode Scanner</title>
+    <script src="https://unpkg.com/@zxing/library@latest"></script> <!-- ZXing for barcode scanning -->
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        #video {
+            width: 100%;
+            height: auto;
+            border: 1px solid #ccc;
+        }
+        #output {
+            margin-top: 10px;
+            font-size: 18px;
+            color: green;
+        }
+    </style>
 </head>
 <body>
-  <h1>Barcode Scanner</h1>
-  <div id="interactive" class="viewport"></div>
-  <p id="result">Scan a barcode...</p>
-  <button id="startScanner">Start Scanner</button>
-  <script>
-    document.getElementById('startScanner').addEventListener('click', function() {
-      Quagga.init({
-        inputStream: {
-          name: "Live",
-          type: "LiveStream",
-          target: document.querySelector('#interactive') // Camera preview
-        },
-        decoder: {
-          readers: ["code_128_reader", "ean_reader", "upc_reader"] // Add more barcode types if needed
-        }
-      }, function(err) {
-        if (err) {
-          console.error(err);
-          document.getElementById('result').textContent = "Error initializing camera.";
-          return;
-        }
-        console.log("Initialization finished. Ready to start");
-        Quagga.start();
-      });
-    });
+    <h1>Barcode Scanner</h1>
+    <video id="video" autoplay></video>
+    <div id="output">Scanned Barcode: <span id="barcode"></span></div>
 
-    Quagga.onDetected(function(data) {
-      const barcode = data.codeResult.code;
-      console.log("Detected barcode:", barcode);
-      document.getElementById('result').textContent = "Scanned Barcode: " + barcode;
+    <script>
+        // Initialize the barcode scanner
+        const codeReader = new ZXing.BrowserBarcodeReader();
+        const videoElement = document.getElementById("video");
+        const barcodeOutput = document.getElementById("barcode");
 
-      // Send the barcode back to ProtoPie
-      if (window.ReactNativeWebView) {
-        window.ReactNativeWebView.postMessage(barcode);
-      }
-    });
-  </script>
+        async function startScanner() {
+            try {
+                // Get the available video input devices
+                const videoInputDevices = await codeReader.listVideoInputDevices();
+
+                if (videoInputDevices.length > 0) {
+                    // Use the first camera by default
+                    const selectedDeviceId = videoInputDevices[0].deviceId;
+
+                    // Start scanning
+                    codeReader.decodeFromVideoDevice(selectedDeviceId, videoElement, (result, error) => {
+                        if (result) {
+                            const barcode = result.text;
+                            barcodeOutput.textContent = barcode;
+
+                            // Send the scanned barcode data to ProtoPie
+                            sendBarcodeToProtoPie(barcode);
+                        }
+                        if (error && !(error instanceof ZXing.NotFoundException)) {
+                            console.error(error);
+                        }
+                    });
+                } else {
+                    console.error("No video input devices found.");
+                }
+            } catch (err) {
+                console.error("Error initializing barcode scanner:", err);
+            }
+        }
+
+        // Send scanned barcode data to ProtoPie
+        function sendBarcodeToProtoPie(barcode) {
+            const message = {
+                type: "barcodeData",
+                value: barcode
+            };
+            window.parent.postMessage(message, "*"); // Send data to ProtoPie
+        }
+
+        // Start the scanner when the page loads
+        window.onload = startScanner;
+    </script>
 </body>
 </html>
