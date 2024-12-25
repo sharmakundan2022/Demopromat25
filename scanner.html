@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -15,30 +14,46 @@
       top: 0;
       left: 0;
     }
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
   </style>
 </head>
 <body>
   <h1>Barcode Scanner</h1>
   <div id="interactive" class="viewport"></div>
   <p id="result">Scan a barcode...</p>
+  <button id="startScanner">Start Scanner</button>
   <script>
-    Quagga.init({
-      inputStream: {
-        name: "Live",
-        type: "LiveStream",
-        target: document.querySelector('#interactive') // Camera preview
-      },
-      decoder: {
-        readers: ["code_128_reader", "ean_reader", "upc_reader"] // Add more barcode types if needed
-      }
-    }, function(err) {
-      if (err) {
-        console.error(err);
-        document.getElementById('result').textContent = "Error initializing camera.";
-        return;
-      }
-      console.log("Initialization finished. Ready to start");
-      Quagga.start();
+    document.getElementById('startScanner').addEventListener('click', function() {
+      Quagga.init({
+        inputStream: {
+          name: "Live",
+          type: "LiveStream",
+          target: document.querySelector('#interactive') // Camera preview
+        },
+        decoder: {
+          readers: ["code_128_reader", "ean_reader", "upc_reader"] // Add more barcode types if needed
+        }
+      }, function(err) {
+        if (err) {
+          console.error(err);
+          document.getElementById('result').textContent = "Error initializing camera.";
+          return;
+        }
+        console.log("Initialization finished. Ready to start");
+        Quagga.start();
+      });
     });
 
     Quagga.onDetected(function(data) {
